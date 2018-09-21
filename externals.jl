@@ -1,5 +1,5 @@
 using Pkg
-import DelimitedFiles.readdlm
+import DelimitedFiles: readdlm, writedlm
 import Random.randperm
 import Statistics: mean, std
 import Printf.@printf
