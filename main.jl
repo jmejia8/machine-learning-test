@@ -42,8 +42,8 @@ classifiers = [
 ######################################################################
 
 # loading the data
-train = readdlm("trainSet.csv", ',', Float64, '\n')
-test = readdlm("testSet.csv", ',', Float64, '\n')
+train = readdlm("data/trainSet.csv", ',', Float64, '\n')
+test = readdlm("data/testSet.csv", ',', Float64, '\n')
 
 
 X = train[:,1:end-1]
