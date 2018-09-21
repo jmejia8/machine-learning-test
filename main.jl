@@ -39,8 +39,8 @@ classifiers = [
     KNeighborsClassifier(3; p=1, algorithm="auto", weights="distance"),
     SVC(kernel="linear", C=0.025),
     SVC(gamma=2, C=1),
-    DecisionTreeClassifier(max_depth=5),
-    RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
+    DecisionTreeClassifier(max_depth=200),
+    RandomForestClassifier(n_estimators=200, max_features=10, n_jobs=4, criterion="entropy"),
     AdaBoostClassifier(),
     GaussianNB(),
     LinearDiscriminantAnalysis(),
@@ -84,7 +84,19 @@ function getData(usePCA = false)
     return X, y, X_test, y_test, X_validate
 end
 
-function plotScatter(X_train, y_train, X, y, y_approx, X_validate, y_validate)
+function plotScatter(model_k)
+
+    println(model_k)
+    model = classifiers[model_k]
+
+    X_train, y_train, X, y, X_validate = getData()
+
+    fit!(model, X_train, y_train)
+
+    # find the classes for the validate set.
+    y_validate = predict(model, X_validate)
+    y_approx = predict(model, X)
+
     if size(X_train, 2) > 2 
         X_train = getPCA(X_train, 2)
     end
@@ -102,29 +114,33 @@ function plotScatter(X_train, y_train, X, y, y_approx, X_validate, y_validate)
     labels = Set(y)
 
     subplot(2, 2, 1)
-    title("Train")
+    title("Train Set")
     for label = labels
         plot(X_train[y_train .== label,1], X_train[y_train .== label,2], marker=:o, lw=0)
     end
+    xlim([-200, 200]); ylim([-300, 150])
 
 
     subplot(2, 2, 2)
-    title("Test")
+    title("Test Set: Exact classes")
     for label = labels
         plot(X[y .== label,1], X[y .== label,2], marker=:o, lw=0)
     end
+    xlim([-200, 200]); ylim([-300, 150])
 
     subplot(2, 2, 3)
-    title("Test approx")
+    title("Test set: Approximate classes")
     for label = labels
         plot(X[y_approx .== label,1], X[y_approx .== label,2], marker=:o, lw=0)
     end
+    xlim([-200, 200]); ylim([-300, 150])
 
     subplot(2, 2, 4)
-    title("validate")
+    title("Validate set: Approximate classes")
     for label = labels
         plot(X_validate[y_validate .== label,1], X_validate[y_validate .== label,2], marker=:o, lw=0)
     end
+    xlim([-200, 200]); ylim([-300, 150])
 
 end
 
@@ -133,10 +149,10 @@ function test(plotResult = false)
     X, y, X_test, y_test, X_validate = getData()
 
 
-    best_y_approx = nothing
-    best_accu = Inf
-    best_model = nothing
+    best_accu = -Inf
+    best_model = -1
 
+    k = 1
     for (name, clf) in zip(clf_names, classifiers)
         model = clf
 
@@ -150,23 +166,20 @@ function test(plotResult = false)
             push!(accuracy_list, accuracy)
         end
 
-        if best_accu > mean(accuracy_list)
-            best_model = model
+        if best_accu < mean(accuracy_list)
+            best_model = k
             best_accu = mean(accuracy_list)
-            best_y_approx = y_approx
         end
 
         # Print stats
         @printf("%s: \t %.2f \t std = %f\n", name, 100*mean(accuracy_list), std(accuracy_list))
 
-        break
+        k += 1
+        # break
     end
 
-    # find the classes for the validate set.
-    y_validate = predict(best_model, X_validate)
-
     # plot the results
-    plotScatter(X, y, X_test, y_test, best_y_approx, X_validate, y_validate)
+    plotScatter(best_model)
 
 
 end
